@@ -5,7 +5,7 @@ import psycopg2
 import psycopg2.extras
 from auth_middleware import token_required
 from auth_blueprint import authentication_blueprint
-from hoots_blueprint import hoots_blueprint
+from workouts_blueprint import hoots_blueprint
 from comments_blueprint import comments_blueprint
 
 app = Flask(__name__)
