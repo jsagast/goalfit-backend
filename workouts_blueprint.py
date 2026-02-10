@@ -13,6 +13,7 @@ workouts_blueprint = Blueprint('workouts_blueprint', __name__)
 def create_workout():
     try:
         new_workout = request.get_json()
+        print(new_workout)
         new_workout["author"] = g.user["id"]
         exercises = new_workout.pop("exercises", [])  # extract exercises if any
 
@@ -34,15 +35,16 @@ def create_workout():
         workout_id = cursor.fetchone()["id"]
 
         # add exercises into join table
+        print (exercises)
         for exercise in exercises:
             cursor.execute("""
                 INSERT INTO workout_exercises (workout_id, exercise_id, sets, reps)
                 VALUES (%s, %s, %s, %s)
             """, (
                 workout_id,
-                exercise["id"],
-                exercise.get("sets"),
-                exercise.get("reps")
+                exercise["exercise_id"],
+                int(exercise.get("sets") or 0),
+                int(exercise.get("reps") or 0)
             ))
 
         # grab with author username
@@ -80,6 +82,7 @@ def create_workout():
         return jsonify(created_workout), 201
 
     except Exception as error:
+        print(error)
         return jsonify({"error": str(error)}), 500
 
 
@@ -87,20 +90,24 @@ def create_workout():
 def workouts_index():
     try:
         connection = get_db_connection()
-        cursor = connection.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
         cursor.execute("""
-            SELECT w.id,
-                   w.author AS workout_author_id,
-                   w.name,
-                   w.description,
-                   w.workout_type,
-                   w.difficulty,
-                   u_workout.username AS author_username
+            SELECT 
+                w.id,
+                w.author AS workout_author_id,
+                w.name,
+                w.description,
+                w.workout_type,
+                w.difficulty,
+                u_workout.username AS author_username,
+                w.created_at,
+                c.id AS comment_id,
+                c.text AS comment_text,
+                u_comment.username AS comment_author_username
             FROM workouts w
-            INNER JOIN users u_workout ON w.author = u_workout.id;
-            LEFT JOIN comments c ON w.id = c.workout
+            INNER JOIN users u_workout ON w.author = u_workout.id
+            LEFT JOIN comments c ON w.id = c.workout_id
             LEFT JOIN users u_comment ON c.author = u_comment.id;
         """)
         workouts = cursor.fetchall()
@@ -109,6 +116,7 @@ def workouts_index():
         connection.close()
         return jsonify(consolidated_workouts), 200
     except Exception as error:
+        print(error)
         return jsonify({"error": str(error)}), 500
 
 
@@ -120,19 +128,21 @@ def show_workout(workout_id):
 
         # workout & comments
         cursor.execute("""
-            SELECT w.id,
-                   w.author AS workout_author_id,
-                   w.name,
-                   w.description,
-                   w.workout_type,
-                   w.difficulty,
-                   u_workout.username AS author_username,
-                   c.id AS comment_id,
-                   c.text AS comment_text,
-                   u_comment.username AS comment_author_username
+            SELECT 
+                w.id,
+                w.author AS workout_author_id,
+                w.name,
+                w.description,
+                w.workout_type,
+                w.difficulty,
+                u_workout.username AS author_username,
+                w.created_at,
+                c.id AS comment_id,
+                c.text AS comment_text,
+                u_comment.username AS comment_author_username
             FROM workouts w
             JOIN users u_workout ON w.author = u_workout.id
-            LEFT JOIN comments c ON w.id = c.workout
+            LEFT JOIN comments c ON w.id = c.workout_id
             LEFT JOIN users u_comment ON c.author = u_comment.id
             WHERE w.id = %s
         """, (workout_id,))
