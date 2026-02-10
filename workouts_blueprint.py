@@ -6,9 +6,9 @@ from auth_middleware import token_required
 from db_helpers import get_db_connection, consolidate_comments_in_workouts
 
 
-hoots_blueprint = Blueprint('hoots_blueprint', __name__)
+workouts_blueprint = Blueprint('workouts_blueprint', __name__)
 
-@hoots_blueprint.route('/workouts', methods=['POST'])
+@workouts_blueprint.route('/workouts', methods=['POST'])
 @token_required
 def create_workout():
     try:
@@ -83,7 +83,7 @@ def create_workout():
         return jsonify({"error": str(error)}), 500
 
 
-@hoots_blueprint.route('/workouts', methods=['GET'])
+@workouts_blueprint.route('/workouts', methods=['GET'])
 def workouts_index():
     try:
         connection = get_db_connection()
@@ -112,7 +112,7 @@ def workouts_index():
         return jsonify({"error": str(error)}), 500
 
 
-@hoots_blueprint.route('/workouts/<workout_id>', methods=['GET'])
+@workouts_blueprint.route('/workouts/<workout_id>', methods=['GET'])
 def show_workout(workout_id):
     try:
         connection = get_db_connection()
@@ -164,7 +164,7 @@ def show_workout(workout_id):
     except Exception as error:
         return jsonify({"error": str(error)}), 500
 
-@hoots_blueprint.route('/workouts/<workout_id>', methods=['PUT']) #check when testing
+@workouts_blueprint.route('/workouts/<workout_id>', methods=['PUT']) #check when testing
 @token_required
 def update_workout(workout_id):
     try:
@@ -341,7 +341,7 @@ def update_workout(workout_id):
 #     except Exception as error:
 #         return jsonify({"error": str(error)}), 500
 
-@hoots_blueprint.route('/workouts/<workout_id>', methods=['DELETE'])
+@workouts_blueprint.route('/workouts/<workout_id>', methods=['DELETE'])
 @token_required
 def delete_workout(workout_id):
     try:

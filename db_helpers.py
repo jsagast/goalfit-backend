@@ -13,7 +13,7 @@ def get_db_connection():
 
 
 def consolidate_comments_in_workouts(workouts_with_comments):
-    print(workouts_with_comments)
+    # print(workouts_with_comments)
     consolidated_workouts = []
     for workout in workouts_with_comments:
         # Check if this workout has already been added to consolidated_workouts
