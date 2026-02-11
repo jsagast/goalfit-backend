@@ -174,29 +174,29 @@ def show_workout(workout_id):
     except Exception as error:
         return jsonify({"error": str(error)}), 500
 
-@workouts_blueprint.route('/workouts/<workout_id>', methods=['PUT']) #check when testing
+@workouts_blueprint.route('/workouts/<workout_id>', methods=['PUT']) 
 @token_required
 def update_workout(workout_id):
     try:
         updated_data = request.json
-        exercises = updated_data.pop("exercises", [])  # exercises from frontend
+        exercises = updated_data.pop("exercises", [])  #remove first to repeat create op.
 
         connection = get_db_connection()
         cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        # 1️⃣ Check workout exists
+        # I'm looking for workouts
         cursor.execute("SELECT * FROM workouts WHERE id = %s", (workout_id,))
         workout = cursor.fetchone()
         if workout is None:
             connection.close()
             return jsonify({"error": "Workout not found"}), 404
 
-        # 2️⃣ Authorization
+        # authorization for author to edit
         if workout["author"] != g.user["id"]:
             connection.close()
             return jsonify({"error": "Unauthorized"}), 401
 
-        # 3️⃣ Update workout main fields
+        #  to update workout db
         cursor.execute("""
             UPDATE workouts
             SET name = %s, description = %s, workout_type = %s, difficulty = %s
@@ -209,17 +209,19 @@ def update_workout(workout_id):
             workout_id
         ))
 
-        # 4️⃣ Fetch current exercises for this workout
+        # grabbing the exercises from join table workout_exercises
         cursor.execute("""
             SELECT exercise_id FROM workout_exercises
             WHERE workout_id = %s
         """, (workout_id,))
+
+        # I do this to get access to all exercises part of the same workout (cursor.fetch all is containing all row that were found)
         current_ex_ids = {row["exercise_id"] for row in cursor.fetchall()}
 
-        # 5️⃣ Build sets of new exercises
-        updated_ex_ids = {ex["id"] for ex in exercises}
+        # do the same with updated exercises (the ones I separate when receiving info)
+        updated_ex_ids = {ex["exercise_id"] for ex in exercises}
 
-        # 6️⃣ Delete exercises removed in frontend
+        # delete from db the exercises that are not part of received info (a but not b)
         to_delete = current_ex_ids - updated_ex_ids
         if to_delete:
             cursor.execute("""
@@ -227,7 +229,7 @@ def update_workout(workout_id):
                 WHERE workout_id = %s AND exercise_id = ANY(%s)
             """, (workout_id, list(to_delete)))
 
-        # 7️⃣ Update or insert exercises
+        # update or add exercises
         for ex in exercises:
             cursor.execute("""
                 UPDATE workout_exercises
@@ -238,23 +240,22 @@ def update_workout(workout_id):
                 ex.get("sets"),
                 ex.get("reps"),
                 workout_id,
-                ex["id"]
+                ex["exercise_id"]
             ))
             updated_exercise = cursor.fetchone()
 
-            # insert new if not exists
             if not updated_exercise:
                 cursor.execute("""
                     INSERT INTO workout_exercises (workout_id, exercise_id, sets, reps)
                     VALUES (%s, %s, %s, %s)
                 """, (
                     workout_id,
-                    ex["id"],
+                    ex["exercise_id"],
                     ex.get("sets"),
                     ex.get("reps")
                 ))
 
-        # 8️⃣ Fetch updated workout
+        # fetching updated data workouts and exercises
         cursor.execute("""
             SELECT w.id,
                    w.author AS workout_author_id,
@@ -269,16 +270,16 @@ def update_workout(workout_id):
         """, (workout_id,))
         updated_workout = cursor.fetchone()
 
-        # 9️⃣ Fetch updated exercises
+      
         cursor.execute("""
             SELECT e.id, e.name, e.muscle_group, e.equipment, we.sets, we.reps
             FROM exercises e
             JOIN workout_exercises we ON e.id = we.exercise_id
             WHERE we.workout_id = %s
         """, (workout_id,))
+
         updated_workout["exercises"] = cursor.fetchall()
 
-        #  🔟 Keep comments untouched
         updated_workout["comments"] = []
 
         connection.commit()
@@ -288,68 +289,6 @@ def update_workout(workout_id):
 
     except Exception as error:
         return jsonify({"error": str(error)}), 500
-
-# @hoots_blueprint.route('/workouts/<workout_id>', methods=['PUT'])
-# @token_required
-# def update_workout(workout_id):
-#     try:
-#         updated_workout_data = request.json
-
-#         connection = get_db_connection()
-#         cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-#         # workout to update
-#         cursor.execute("SELECT * FROM workouts WHERE id = %s", (workout_id,))
-#         workout_to_update = cursor.fetchone()
-
-#         if workout_to_update is None:
-#             connection.close()
-#             return jsonify({"error": "Workout not found"}), 404
-
-#         #  authorization
-#         if workout_to_update["author"] != g.user["id"]:
-#             connection.close()
-#             return jsonify({"error": "Unauthorized"}), 401
-
-#         # updating
-#         cursor.execute("""
-#             UPDATE workouts 
-#             SET name = %s, description = %s, workout_type = %s, difficulty = %s
-#             WHERE id = %s
-#             RETURNING id
-#         """, (
-#             updated_workout_data["name"],
-#             updated_workout_data["description"],
-#             updated_workout_data["workout_type"],
-#             updated_workout_data["difficulty"],
-#             workout_id
-#         ))
-
-#         updated_workout_id = cursor.fetchone()["id"]
-
-#         # get the updated workout with username
-#         cursor.execute("""
-#             SELECT w.id,
-#                    w.author AS workout_author_id,
-#                    w.name,
-#                    w.description,
-#                    w.workout_type,
-#                    w.difficulty,
-#                    u_workout.username AS author_username
-#             FROM workouts w
-#             JOIN users u_workout ON w.author = u_workout.id
-#             WHERE w.id = %s
-#         """, (updated_workout_id,))
-
-#         updated_workout = cursor.fetchone()
-
-#         connection.commit()
-#         connection.close()
-
-#         return jsonify(updated_workout), 200
-
-#     except Exception as error:
-#         return jsonify({"error": str(error)}), 500
 
 @workouts_blueprint.route('/workouts/<workout_id>', methods=['DELETE'])
 @token_required
