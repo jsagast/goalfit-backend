@@ -24,8 +24,9 @@ def consolidate_comments_in_workouts(workouts_with_comments):
                 consolidated_workout["comments"].append(
                     {"comment_text": workout["comment_text"],
                      "comment_id": workout["comment_id"],
-                     "comment_author_username": workout["comment_author_username"]
-                     })
+                     "comment_author_username": workout["comment_author_username"],
+                     "comment_created_at": workout["comment_created_at"]
+                    })
                 break
 
         # If the workout doesn't exist in consolidated_workouts, add it
@@ -35,7 +36,8 @@ def consolidate_comments_in_workouts(workouts_with_comments):
                 workout["comments"].append(
                     {"comment_text": workout["comment_text"],
                      "comment_id": workout["comment_id"],
-                     "comment_author_username": workout["comment_author_username"]
+                     "comment_author_username": workout["comment_author_username"],
+                     "comment_created_at": workout["comment_created_at"]
                      }
                 )
             del workout["comment_id"]

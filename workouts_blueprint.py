@@ -104,6 +104,7 @@ def workouts_index():
                 w.created_at,
                 c.id AS comment_id,
                 c.text AS comment_text,
+                c.created_at AS comment_created_at,
                 u_comment.username AS comment_author_username
             FROM workouts w
             INNER JOIN users u_workout ON w.author = u_workout.id
@@ -139,6 +140,7 @@ def show_workout(workout_id):
                 w.created_at,
                 c.id AS comment_id,
                 c.text AS comment_text,
+                c.created_at AS comment_created_at,
                 u_comment.username AS comment_author_username
             FROM workouts w
             JOIN users u_workout ON w.author = u_workout.id
