@@ -22,15 +22,16 @@ def create_workout():
 
         # create workout
         cursor.execute("""
-            INSERT INTO workouts (author, name, description, workout_type, difficulty)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO workouts (author, name, description, workout_type, difficulty, workout_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             new_workout["author"],
             new_workout["name"],
             new_workout["description"],
             new_workout["workout_type"],
-            new_workout["difficulty"]
+            new_workout["difficulty"],
+            new_workout["workout_date"]
         ))
         workout_id = cursor.fetchone()["id"]
 
@@ -50,12 +51,13 @@ def create_workout():
         # grab with author username
         cursor.execute("""
             SELECT w.id,
-                   w.author AS workout_author_id,
-                   w.name,
-                   w.description,
-                   w.workout_type,
-                   w.difficulty,
-                   u_workout.username AS author_username
+                w.author AS workout_author_id,
+                w.name,
+                w.description,
+                w.workout_type,
+                w.difficulty,
+                w.workout_date,
+                u_workout.username AS author_username
             FROM workouts w
             JOIN users u_workout ON w.author = u_workout.id
             WHERE w.id = %s
@@ -100,6 +102,7 @@ def workouts_index():
                 w.description,
                 w.workout_type,
                 w.difficulty,
+                w.workout_date,
                 u_workout.username AS author_username,
                 w.created_at,
                 c.id AS comment_id,
@@ -136,6 +139,7 @@ def show_workout(workout_id):
                 w.description,
                 w.workout_type,
                 w.difficulty,
+                w.workout_date,
                 u_workout.username AS author_username,
                 w.created_at,
                 c.id AS comment_id,
@@ -201,13 +205,14 @@ def update_workout(workout_id):
         #  to update workout db
         cursor.execute("""
             UPDATE workouts
-            SET name = %s, description = %s, workout_type = %s, difficulty = %s
+            SET name = %s, description = %s, workout_type = %s, difficulty = %s, workout_date = %s
             WHERE id = %s
         """, (
             updated_data["name"],
             updated_data["description"],
             updated_data["workout_type"],
             updated_data["difficulty"],
+            updated_data.get("workout_date"),
             workout_id
         ))
 
@@ -324,4 +329,25 @@ def delete_workout(workout_id):
     except Exception as error:
         return jsonify({"error": str(error)}), 500
 
+#calendar 
+# @workouts_blueprint.route('/workouts/calendar', methods=['GET'])
+# @token_required
+# def get_workouts_calendar():
+#     try:
+#         user_id = g.user_id
+#         connection = get_db_connection()
+#         cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+#         cursor.execute("""
+#             SELECT id, name, workout_date, difficulty
+#             FROM workouts
+#             WHERE author = %s
+#             ORDER BY workout_date
+#         """, (user_id,))
+
+#         workouts = cursor.fetchall()
+#         return jsonify(workouts)
+    
+#     except Exception as error:
+#         return jsonify({"error": str(error)}), 500
 
