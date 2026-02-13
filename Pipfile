@@ -11,6 +11,7 @@ pyjwt = "*"
 python-dotenv = "*"
 bcrypt = "*"
 flask-cors = "*"
+gunicorn = "*"
 
 [dev-packages]
 
