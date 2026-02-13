@@ -112,7 +112,8 @@ def workouts_index():
             FROM workouts w
             INNER JOIN users u_workout ON w.author = u_workout.id
             LEFT JOIN comments c ON w.id = c.workout_id
-            LEFT JOIN users u_comment ON c.author = u_comment.id;
+            LEFT JOIN users u_comment ON c.author = u_comment.id
+            ORDER BY w.created_at DESC; 
         """)
         workouts = cursor.fetchall()
         consolidated_workouts = consolidate_comments_in_workouts(workouts)
@@ -139,7 +140,7 @@ def show_workout(workout_id):
                 w.description,
                 w.workout_type,
                 w.difficulty,
-                w.workout_date,
+                TO_CHAR(w.workout_date, 'YYYY-MM-DD') AS workout_date,
                 u_workout.username AS author_username,
                 w.created_at,
                 c.id AS comment_id,
@@ -328,26 +329,4 @@ def delete_workout(workout_id):
 
     except Exception as error:
         return jsonify({"error": str(error)}), 500
-
-#calendar 
-# @workouts_blueprint.route('/workouts/calendar', methods=['GET'])
-# @token_required
-# def get_workouts_calendar():
-#     try:
-#         user_id = g.user_id
-#         connection = get_db_connection()
-#         cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-#         cursor.execute("""
-#             SELECT id, name, workout_date, difficulty
-#             FROM workouts
-#             WHERE author = %s
-#             ORDER BY workout_date
-#         """, (user_id,))
-
-#         workouts = cursor.fetchall()
-#         return jsonify(workouts)
-    
-#     except Exception as error:
-#         return jsonify({"error": str(error)}), 500
 

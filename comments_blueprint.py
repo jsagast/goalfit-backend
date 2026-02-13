@@ -24,12 +24,13 @@ def create_workout_comment(workout_id):
 
         comment_id = cursor.fetchone()["id"]
 
-        # getting comments using author username
         cursor.execute("""
-            SELECT c.id, 
-                   c.author AS comment_author_id, 
-                   c.text AS comment_text, 
-                   u_comment.username AS comment_author_username
+            SELECT 
+                c.id AS comment_id,
+                c.author AS comment_author_id,
+                c.text AS comment_text,
+                c.created_at AS comment_created_at,
+                u_comment.username AS comment_author_username
             FROM comments c
             JOIN users u_comment ON c.author = u_comment.id
             WHERE c.id = %s
